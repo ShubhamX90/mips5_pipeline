@@ -83,6 +83,10 @@ module mips_assertions;
         `CHK("A08a ex_redirect => idex_valid", !ex_redirect || idex_valid)
         `CHK("A08b redirect_id excluded by ex_redirect", !(redirect_id && ex_redirect))
         `CHK("A08c redirect_id => valid j/jal in ID", !redirect_id || (ifid_valid && id_jump))
+        // A08d: invariant behind the 2-slot branch penalty: a valid instruction always
+        //       sits in ID behind a redirecting EX instruction (IF/ID can only hold a
+        //       bubble after a flush, and a flush would have squashed the redirector too)
+        `CHK("A08d ex_redirect => ifid_valid", !ex_redirect || ifid_valid)
 
         // ---- forwarding ----------------------------------------------------------
         // A09: select encoding legal

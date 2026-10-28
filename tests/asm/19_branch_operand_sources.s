@@ -65,6 +65,6 @@ s8: check $s7, 0, 8
     li    $s3, 17
     sw    $s3, 0($zero)
     lw    $s4, 0($zero)
-    bne   $s3, $s4, bad
+    bne   $s3, $s4, __fail
     check $s7, 0, 9
 .endtest

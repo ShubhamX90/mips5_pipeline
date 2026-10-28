@@ -60,7 +60,7 @@ COV_ONLY_WITH_MM = {"load_store_data_nostall", "st_fwd_mem_mem"}
 def parse_meta(text: str) -> dict:
     meta = {"cause": "break", "selfcheck": True, "maxcyc": 300000}
     for line in text.splitlines():
-        m = re.match(r"^\s*#!\s*(\w[\w-]*)\s*(?:=|\s)\s*(.*)$", line)
+        m = re.match(r"^\s*#!\s*(\w[\w-]*)\s*(?:=|\s|$)\s*(.*)$", line)
         if not m:
             continue
         key, val = m.group(1), m.group(2).strip()
@@ -282,9 +282,14 @@ def main(argv=None) -> int:
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
     args = ap.parse_args(argv)
 
+    # (re)build simulators if any RTL/testbench source is newer than the binaries
+    mk = subprocess.run(["make", "-s", "-C", str(ROOT), "sims"], capture_output=True, text=True)
+    if mk.returncode != 0:
+        print(mk.stdout + mk.stderr, file=sys.stderr)
+        return 2
     for v, p in VARIANTS.items():
         if not p.exists():
-            print(f"missing {p}; run 'make sims' first", file=sys.stderr)
+            print(f"missing {p}", file=sys.stderr)
             return 2
 
     t0 = time.time()
