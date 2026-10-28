@@ -101,10 +101,10 @@ module mips_coverage;
     `COV(back_to_back_loads,    exmem_valid && exmem_mem_read && memwb_valid && memwb_is_load)
 
     // ---- halts ------------------------------------------------------------------------
-    `COV(halt_break,            halt_now && halt_cause == 2'd1)
-    `COV(halt_illegal,          halt_now && halt_cause == 2'd2)
-    `COV(halt_addr_load_store,  halt_now && halt_cause == 2'd3 && (memwb_instr[31:26] >= 6'h20))
-    `COV(halt_addr_jr,          halt_now && halt_cause == 2'd3 && memwb_instr[31:26] == 6'h00)
+    `COV(halt_break,            halt_now && memwb_exc == 2'd1)
+    `COV(halt_illegal,          halt_now && memwb_exc == 2'd2)
+    `COV(halt_addr_load_store,  halt_now && memwb_exc == 2'd3 && (memwb_instr[31:26] >= 6'h20))
+    `COV(halt_addr_jr,          halt_now && memwb_exc == 2'd3 && memwb_instr[31:26] == 6'h00)
     `COV(store_fault_suppressed, exmem_valid && exmem_mem_write && mem_fault)
     `COV(younger_store_killed_by_halt, halt_now && exmem_valid && exmem_mem_write)
 
