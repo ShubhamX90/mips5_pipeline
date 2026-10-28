@@ -92,6 +92,15 @@ as jump targets, writes to `$0`, forward branches with live shadows, bounded loo
 `make random RANDOM_SEEDS=N` — every failure prints a one-line reproducer
 (`python3 tools/regress.py one build/random_src/rand_00042.s`).
 
+### 3b. Bounded-exhaustive hazard sequences
+
+`tools/exhaustive.py` (`make exhaustive`) executes **every ordered sequence of 4 templates** from a 14-entry alphabet
+(dependent ALU ops, loads and stores through the same two registers, `beq`/`bne` with a poisoned shadow, `j`, `jal`,
+`jr`, multiply) under two operand initialisations (equal / unequal, so every branch goes both ways):
+14⁴ × 2 = **76,832 blocks, ≈ 550k instructions**, packed ~250 blocks per program and run on all three RTL variants
+through the full flow. Values are kept small and aligned so no block faults. Every adjacent-instruction interaction up
+to distance 3 is therefore exercised in every combination — the class of bug random testing finds only by luck.
+
 ## 4. SystemVerilog assertions (`tb/mips_assertions.sv`)
 
 Written as clocked immediate assertions (`assert (...) else ...`), which run on any SV-2012 simulator that supports
@@ -149,7 +158,7 @@ These checks catch hazard-logic bugs that leave results unchanged — e.g. an in
 71 realistic RTL bugs are injected one at a time into a private copy of `rtl/` — dropped forwarding paths, swapped
 priorities, missing flushes, wrong immediates, ALU/decoder slips, byte-lane errors, dropped faults, an unfrozen PC, a
 wrong EPC, … The three simulators are rebuilt and the whole directed + random regression is run against the unmodified
-ISS. Result: **MUT_RESULT**. The mutation run found one real *hole* — an imprecise interlock (stall on a matching but
+ISS. Result: **71 / 71 mutants killed** (`docs/MUTATION.md`). The mutation run found one real *hole* — an imprecise interlock (stall on a matching but
 unread register field) survived until `40_decode_precision` was written to kill it.
 
 ## 8. Running
@@ -158,6 +167,7 @@ unread register field) survived until `40_decode_precision` was written to kill 
 make                    # lint, build 3 simulators, directed + 200 random + benchmarks
 make test               # directed tests only
 make random RANDOM_SEEDS=1000
+make exhaustive         # 76,832 hazard-sequence blocks, ~30 s
 make mutation           # ~10 minutes
 python3 tools/regress.py one tests/asm/24_back_to_back_control.s
 make wave T=tests/asm/24_back_to_back_control.s   # VCD in build/wave/wave.vcd

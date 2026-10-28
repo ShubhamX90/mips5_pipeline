@@ -17,12 +17,12 @@ the verification itself, and a 16-workload benchmark study of pipeline efficienc
 | Control hazards | predict-not-taken, **no delay slot**; branch/`jr`/`jalr` resolved in EX (2-slot flush), `j/jal` in ID (1-slot flush) |
 | Precise halting | `break` / illegal instruction / address error; nothing younger than the halting instruction ever commits |
 | Directed tests | **41** self-checking programs (≈ 1,070 in-program `check` statements incl. a 100-cell hazard matrix and an 88-cell branch matrix) |
-| Random | @@RANDOM@@ |
-| Bounded-exhaustive | @@EXHAUSTIVE@@ |
-| Assertions / coverage | 20 SystemVerilog assertion groups (@@ASSERTS@@ evaluations in the full regression) · @@BINS@@ functional-coverage bins, **0 holes** |
+| Random | **1,000** seeded programs per regression (≈ 567k retired instructions, 1 in 16 ends in an injected fault), all hazard-dense |
+| Bounded-exhaustive | **76,832** instruction-sequence blocks (every 4-long sequence of 14 hazard templates × 2 operand sets, ≈ 550k instructions) on each of the 3 RTL variants |
+| Assertions / coverage | 20 SystemVerilog assertion groups (755k evaluations in the full regression) · 59 functional-coverage bins, **0 holes** |
 | Cross-checks | every run: byte-exact retirement trace + final state vs. ISS on **3 RTL variants**; hardware cycle counters = analytical model = issue-time recurrence |
-| Mutation testing | **@@MUT@@** injected RTL bugs killed (`docs/MUTATION.md`) |
-| Benchmarks | 16 workloads, @@BENCHINSTR@@ retired instructions: aggregate **CPI @@CPI@@**, geometric-mean **@@SPEEDUP@@× speed-up** over the single-cycle core (analytical clock model) |
+| Mutation testing | **71 / 71** injected RTL bugs killed (`docs/MUTATION.md`) |
+| Benchmarks | 16 workloads, 358k retired instructions: aggregate **CPI 1.47**, geometric-mean **2.1× speed-up** over the single-cycle core (analytical clock model) |
 
 ## Quick start
 

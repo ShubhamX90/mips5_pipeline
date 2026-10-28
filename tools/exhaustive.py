@@ -8,13 +8,13 @@ executed -- under two operand initialisations (equal / unequal, so each branch
 goes both ways).  With K = 4 that is 14^4 x 2 = 76,832 blocks (~800k retired
 instructions); K = 3 is 5,488 blocks.
 
-Blocks are packed ~400 per program (re-initialising the working registers
+Blocks are packed ~250 per program (re-initialising the working registers
 between blocks) and run through the full regression flow: lock-step against the
 ISS on all three RTL variants, assertions, cycle-exact perf model.  Values are
 kept small and aligned so no block ever faults; every dependent adjacent
 interaction up to distance K-1 is therefore exercised in every combination.
 
-Usage: exhaustive.py [--k 4] [--per-program 400]
+Usage: exhaustive.py [--k 4] [--per-program 250]
 """
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ def build_programs(k: int, per_program: int):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--k", type=int, default=4)
-    ap.add_argument("--per-program", type=int, default=400)
+    ap.add_argument("--per-program", type=int, default=250)
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
     args = ap.parse_args()
 
