@@ -98,12 +98,15 @@ module tb_mips;
     integer trace_fd = 0;
     integer maxcyc;
     integer tb_cycles = 0;
-    reg [1023:0] trace_name, state_name, vcd_name;
+    reg [4095:0] trace_name, state_name, vcd_name;
     integer i;
 
     initial begin
         if (!$value$plusargs("MAXCYC=%d", maxcyc)) maxcyc = 300000;
-        if ($value$plusargs("TRACE=%s", trace_name)) trace_fd = $fopen(trace_name, "w");
+        if ($value$plusargs("TRACE=%s", trace_name)) begin
+            trace_fd = $fopen(trace_name, "w");
+            if (trace_fd == 0) $display("ERROR: cannot open trace file %0s", trace_name);
+        end
         if ($value$plusargs("VCD=%s", vcd_name)) begin
             $dumpfile(vcd_name);
             $dumpvars(0, tb_mips);
@@ -128,7 +131,7 @@ module tb_mips;
     // per-cycle stage occupancy for tools/pipeview.py
     integer pipe_fd = 0;
     integer pipe_cyc = 0;
-    reg [1023:0] pipe_name;
+    reg [4095:0] pipe_name;
     initial if ($value$plusargs("PIPETRACE=%s", pipe_name)) pipe_fd = $fopen(pipe_name, "w");
     always @(posedge clk) begin
         if (!rst && pipe_fd != 0 && !halted) begin
@@ -144,7 +147,7 @@ module tb_mips;
 
     task dump_state;
         integer fd, k;
-        reg [1023:0] fname;
+        reg [4095:0] fname;
         begin
             if ($value$plusargs("STATE=%s", fname)) begin
                 fd = $fopen(fname, "w");

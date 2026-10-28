@@ -22,7 +22,7 @@ module imem #(
     reg [31:0] mem [0:WORDS-1];
 
     integer i;
-    reg [1023:0] fname;
+    reg [4095:0] fname;
     initial begin
         for (i = 0; i < WORDS; i = i + 1) mem[i] = `ILLEGAL_FETCH;
         if ($value$plusargs("IMEM=%s", fname)) $readmemh(fname, mem);
@@ -49,7 +49,7 @@ module dmem #(
     reg [31:0] mem [0:WORDS-1];
 
     integer i;
-    reg [1023:0] fname;
+    reg [4095:0] fname;
     initial begin
         for (i = 0; i < WORDS; i = i + 1) mem[i] = 32'b0;
         if ($value$plusargs("DMEM=%s", fname)) $readmemh(fname, mem);
