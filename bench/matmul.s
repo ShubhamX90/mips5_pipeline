@@ -1,3 +1,4 @@
+#! no-selfcheck
 # matmul -- 8x8 integer matrix multiply C = A*B (A, B from an LCG, 8-bit entries);
 # result = sum(C[i][j] * (8i+j+1)).
 # Character: triple loop, address arithmetic (sll/addu), two loads + MUL + accumulate per

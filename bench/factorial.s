@@ -1,3 +1,4 @@
+#! no-selfcheck
 # factorial -- sum of n! (mod 2^32) for n = 1..20 using MUL.
 # Character: MUL result feeds the next MUL directly; short outer/inner loops.
 .text

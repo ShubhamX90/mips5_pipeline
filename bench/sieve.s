@@ -1,3 +1,4 @@
+#! no-selfcheck
 # sieve -- Sieve of Eratosthenes on 1024 byte flags; result = number of primes < 1024 (172).
 # Character: byte stores with stride, nested loops, inner loop trip counts shrink with i.
 .equ N, 1024

@@ -1,3 +1,4 @@
+#! no-selfcheck
 # binary_search -- 200 LCG keys searched in a sorted 256-entry table a[i] = 7i+3;
 # result = number of keys found.
 # Character: log2(N) iterations of load, compare, three-way branch per search; load-use into branch.

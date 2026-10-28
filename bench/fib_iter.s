@@ -1,3 +1,4 @@
+#! no-selfcheck
 # fib_iter -- iterative Fibonacci, 100 repetitions of fib(40).
 # Character: tight loop, register-only, every instruction depends on the previous
 # one (forwarding-bound), one taken backward branch per iteration.

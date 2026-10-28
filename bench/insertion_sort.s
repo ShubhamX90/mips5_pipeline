@@ -1,3 +1,4 @@
+#! no-selfcheck
 # insertion_sort -- 64 LCG words (10-bit), insertion sort; result = sum((i+1)*a[i]).
 # Character: inner while-loop with load, compare, shift-store; mix of taken/not-taken.
 .equ N, 64

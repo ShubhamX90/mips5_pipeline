@@ -106,8 +106,8 @@ def linked_list():
     nxt = lambda i: (37 * i + 1) & 127  # noqa: E731
     cur, tot = 0, 0
     for _ in range(1024):
-        tot += 3 * cur + 1
         cur = nxt(cur)
+        tot += 3 * cur + 1
     return tot & M
 
 

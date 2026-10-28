@@ -1,3 +1,4 @@
+#! no-selfcheck
 # gcd -- Euclid by repeated subtraction over 40 LCG pairs (values 1..1024); result = sum of gcds.
 # Character: branch-dominated, data-dependent direction changes every few iterations
 # (pessimal for a static predict-not-taken pipeline).

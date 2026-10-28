@@ -1,5 +1,6 @@
+#! no-selfcheck
 # linked_list -- 128 nodes {next ptr, value} wired as next(i) = (37i+1) mod 128; 1024 hops
-# starting at node 0 sum the node values (value(i) = 3i+1).
+# starting at node 0 sum the values of the nodes visited (value(i) = 3i+1).
 # Character: pure pointer chasing -- every lw's address depends on the previous lw (load-use
 # stall on every hop) and the loaded pointer is the loop-carried dependence.
 .text
@@ -29,8 +30,8 @@ build:
     li    $v0, 0
     li    $s1, 1024
 walk:
-    lw    $t1, 4($t0)           # value
-    lw    $t0, 0($t0)           # next pointer
+    lw    $t0, 0($t0)           # advance: next pointer
+    lw    $t1, 4($t0)           # value; its address is the pointer just loaded -> load-use stall
     addu  $v0, $v0, $t1
     addiu $s1, $s1, -1
     bgtz  $s1, walk

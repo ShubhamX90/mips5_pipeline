@@ -1,3 +1,4 @@
+#! no-selfcheck
 # memcpy_strlen -- build a 400-byte NUL-terminated string from an LCG, strlen it, copy it
 # byte by byte, then checksum the copy; result = strlen + sum(bytes of copy).
 # Character: lb/lbu/sb streams, byte loop-carried pointers, branch on loaded byte (load-use into branch).

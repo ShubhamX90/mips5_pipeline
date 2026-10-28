@@ -80,3 +80,98 @@ def predict(res, imem_words, mem_mem_fwd: bool = True) -> Prediction:
 
 def predict_single(res) -> int:
     return res.instret + (1 if res.cause in (isa.EXC_ILLEGAL, isa.EXC_ADDR) else 0)
+
+
+# =============================================================================
+# Trace-driven timeline model with design-space what-ifs
+# =============================================================================
+@dataclass
+class Config:
+    """Microarchitecture knobs for the what-if analysis.  The default is the RTL."""
+    forwarding: str = "full"       # 'full' (EX/MEM + MEM/WB + RF bypass) | 'none' (RF write-through only)
+    branch: str = "ex"             # 'ex'   : resolve in EX, predict not-taken      (this design)
+                                   # 'id'   : resolve in ID (needs operands one stage earlier)
+                                   # 'btfn' : static backward-taken / forward-not-taken, target known in ID
+    mem_mem_fwd: bool = True
+    name: str = "baseline"
+
+
+@dataclass
+class Timeline:
+    cycles: int
+    stall_cycles: int = 0          # cycles lost to data hazards
+    flush_cycles: int = 0          # cycles lost to control hazards
+    ex_flush_events: int = 0
+    id_flush_events: int = 0
+
+
+def timeline(res, imem_words, cfg: Config = Config()) -> Timeline:
+    """Issue-time recurrence.  t[i] is the cycle instruction i occupies EX.
+
+    Constraints (baseline = this RTL):
+        t[i] >= t[i-1] + 1                       in-order, one per cycle
+        t[c] >= t[p] + lat(p)                    RAW, lat = 1 (ALU), 2 (load) with full forwarding,
+                                                 3 for everything without forwarding
+        t[next] >= t[b] + 3 / 2                  taken EX-resolved branch / ID-resolved jump
+    Total cycles = t[last] + 2 (the last instruction still needs MEM and WB).
+    """
+    stream = [(r.pc, r.instr, r.taken) for r in res.retired]
+    t_prev = 2                                # so the first instruction lands in cycle 3
+    ready = {}                                # reg -> (producer t, is_load)
+    next_min = 0                              # redirect constraint on the next instruction
+    base = stalls = flushes = rex = rid = 0
+    for pc, instr, taken in stream:
+        u = isa.usage(instr)
+        f = isa.fields(instr)
+        t = max(t_prev + 1, next_min)
+        floor_t = t
+        need = []
+        if u.uses_rs:
+            need.append(f["rs"])
+        if u.uses_rt and not (cfg.mem_mem_fwd and u.is_store):
+            need.append(f["rt"])
+        for r in need:
+            if r == 0 or r not in ready:
+                continue
+            tp, is_load = ready[r]
+            if cfg.forwarding == "none":
+                lat = 3
+            else:
+                lat = 2 if is_load else 1
+            if cfg.branch == "id" and (u.is_cond_branch):
+                lat += 1                       # operands are needed one stage earlier
+            t = max(t, tp + lat)
+        stalls += t - floor_t
+        # branch / jump penalties for the *next* instruction
+        next_min = 0
+        if u.is_cond_branch:
+            backward = isa.sext(f["imm"], 16) < 0
+            if cfg.branch == "ex":
+                pen = 3 if taken else 0
+            elif cfg.branch == "id":
+                pen = 2 if taken else 0
+            else:  # btfn
+                if backward:
+                    pen = 2 if taken else 3
+                else:
+                    pen = 3 if taken else 0
+            if pen:
+                next_min = t + pen
+                flushes += pen - 1
+                rex += 1
+        elif u.is_jr and taken:
+            next_min = t + 3
+            flushes += 2
+            rex += 1
+        elif u.is_direct_jump:
+            next_min = t + 2
+            flushes += 1
+            rid += 1
+        if u.dest:
+            ready[u.dest] = (t, u.is_load)
+        t_prev = t
+    n = len(stream)
+    cycles = t_prev + 2 if n else 0
+    if res.cause in (isa.EXC_ILLEGAL, isa.EXC_ADDR):
+        cycles += 1
+    return Timeline(cycles, stalls, flushes, rex, rid)

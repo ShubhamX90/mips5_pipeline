@@ -1,3 +1,4 @@
+#! no-selfcheck
 # popcount -- Kernighan bit counting over 256 random 32-bit words; result = total set bits.
 # Character: data-dependent inner trip count (avg 16), a 3-instruction dependent chain
 # (addiu / and / bne) with a taken backward branch each time.

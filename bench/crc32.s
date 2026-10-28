@@ -1,3 +1,4 @@
+#! no-selfcheck
 # crc32 -- bitwise CRC-32 (poly 0xEDB88320) over 128 LCG bytes; result = final CRC.
 # Character: shift/xor ALU chain with a data-dependent branch on the low bit for each of
 # 1024 bits (about half taken, unpredictable).

@@ -1,3 +1,4 @@
+#! no-selfcheck
 # mini_vm -- bytecode interpreter: 256 random opcodes (0..3) dispatched 4096 times through a
 # jump table (lbu -> sll -> lw -> jr), updating an accumulator; result = final accumulator.
 #   op0: acc += 3   op1: acc ^= 0x55   op2: acc = rotl(acc,1)   op3: acc -= 7

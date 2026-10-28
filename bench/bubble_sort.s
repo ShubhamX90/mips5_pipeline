@@ -1,3 +1,4 @@
+#! no-selfcheck
 # bubble_sort -- 64 LCG-generated words sorted ascending; result = sum((i+1)*a[i]).
 # Character: data-dependent swap branch (unpredictable), lw/lw/compare chains with
 # load-use stalls, stores in the shadow of branches.

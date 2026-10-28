@@ -1,3 +1,4 @@
+#! no-selfcheck
 # saxpy -- y[i] = 3*x[i] + y[i] over 256 elements (streaming); result = sum(y).
 # Character: no branches inside the body besides the loop, two loads + MUL + store;
 # regular, load-use heavy, high ILP-friendliness.

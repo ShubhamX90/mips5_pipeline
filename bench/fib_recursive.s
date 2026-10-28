@@ -1,3 +1,4 @@
+#! no-selfcheck
 # fib_recursive -- naive recursive fib(17) = 1597 with a software stack.
 # Character: call/return dominated: jal, sw/lw of $ra and arguments, lw $ra -> jr $ra,
 # data-dependent recursion shape, ~5000 calls.

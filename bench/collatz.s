@@ -1,3 +1,4 @@
+#! no-selfcheck
 # collatz -- total Collatz steps for n = 1..250; result = sum of step counts.
 # Character: parity branch with essentially random outcome each step; short dependent ALU chains.
 .text

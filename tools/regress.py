@@ -203,6 +203,9 @@ def run_case(name: str, src: Path, work_root: Path, variants=("pipe", "nomm", "s
             key = {"stalls_loaduse": "stalls_loaduse"}.get(k, k)
             if p.get(key) != want:
                 fail(f"[{v}] perf '{k}': RTL {p.get(key)} != model {want}")
+        tl = perfmodel.timeline(ref, prog.imem, perfmodel.Config(mem_mem_fwd=(v == "pipe")))
+        if tl.cycles != p["cycles"]:
+            fail(f"[{v}] cycles {p['cycles']} != timeline model {tl.cycles}")
         ident = p["instret"] + 4 + p["stalls_loaduse"] + p["squashed"] + \
             (1 if ref.cause in (isa.EXC_ILLEGAL, isa.EXC_ADDR) else 0)
         if p["cycles"] != ident:
