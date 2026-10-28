@@ -44,10 +44,11 @@ import isa  # noqa: E402
 import iss  # noqa: E402
 import perfmodel  # noqa: E402
 
-BUILD = ROOT / "build"
-VARIANTS = {"pipe": BUILD / "sim_pipe.vvp",
-            "nomm": BUILD / "sim_pipe_nomm.vvp",
-            "single": BUILD / "sim_single.vvp"}
+BUILD = Path(os.environ.get("MIPS_WORK", ROOT / "build"))        # artifacts
+SIMDIR = Path(os.environ.get("MIPS_SIM_DIR", ROOT / "build"))     # compiled simulators
+VARIANTS = {"pipe": SIMDIR / "sim_pipe.vvp",
+            "nomm": SIMDIR / "sim_pipe_nomm.vvp",
+            "single": SIMDIR / "sim_single.vvp"}
 PASS_CODE = 0x600D
 CAUSE = {"break": 1, "illegal": 2, "addr": 3}
 
@@ -257,10 +258,18 @@ def print_table(results):
                 print(f"      ! {e}")
 
 
-def run_many(cases, work_root, jobs):
+def print_failures(results):
+    for r in results:
+        if not r["ok"]:
+            print(f"FAIL {r['name']}")
+            for e in r["errors"]:
+                print(f"      ! {e}")
+
+
+def run_many(cases, work_root, jobs, variants):
     results = []
     with cf.ThreadPoolExecutor(max_workers=jobs) as ex:
-        futs = {ex.submit(run_case, n, s, work_root): n for n, s in cases}
+        futs = {ex.submit(run_case, n, s, work_root, variants): n for n, s in cases}
         for f in cf.as_completed(futs):
             try:
                 results.append(f.result())
@@ -280,14 +289,20 @@ def main(argv=None) -> int:
     ap.add_argument("--length", type=int, default=400, help="random program length (instructions)")
     ap.add_argument("--filter", default="")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
+    ap.add_argument("--variants", default="pipe,nomm,single",
+                    help="comma list of RTL variants to run (pipe,nomm,single)")
+    ap.add_argument("--quiet", action="store_true", help="only print failures and the summary")
     args = ap.parse_args(argv)
+    variants = tuple(v for v in args.variants.split(",") if v)
 
     # (re)build simulators if any RTL/testbench source is newer than the binaries
-    mk = subprocess.run(["make", "-s", "-C", str(ROOT), "sims"], capture_output=True, text=True)
-    if mk.returncode != 0:
-        print(mk.stdout + mk.stderr, file=sys.stderr)
-        return 2
-    for v, p in VARIANTS.items():
+    if "MIPS_SIM_DIR" not in os.environ:
+        mk = subprocess.run(["make", "-s", "-C", str(ROOT), "sims"], capture_output=True, text=True)
+        if mk.returncode != 0:
+            print(mk.stdout + mk.stderr, file=sys.stderr)
+            return 2
+    for v in variants:
+        p = VARIANTS[v]
         if not p.exists():
             print(f"missing {p}", file=sys.stderr)
             return 2
@@ -298,7 +313,7 @@ def main(argv=None) -> int:
 
     if args.mode == "one":
         src = Path(args.file).resolve()
-        r = run_case(src.stem, src, BUILD / "one")
+        r = run_case(src.stem, src, BUILD / "one", variants)
         print_table([r])
         print(f"artifacts: {BUILD/'one'/src.stem}")
         return 0 if r["ok"] else 1
@@ -307,8 +322,11 @@ def main(argv=None) -> int:
         files = sorted((ROOT / "tests" / "asm").glob("*.s"))
         files = [f for f in files if args.filter in f.name]
         print(f"== directed tests: {len(files)} programs")
-        results = run_many([(f.stem, f) for f in files], BUILD / "directed", args.jobs)
-        print_table(results)
+        results = run_many([(f.stem, f) for f in files], BUILD / "directed", args.jobs, variants)
+        if not args.quiet:
+            print_table(results)
+        else:
+            print_failures(results)
         all_results += results
 
     if args.mode in ("random", "all"):
@@ -321,7 +339,7 @@ def main(argv=None) -> int:
             p.write_text(randgen.generate(s, args.length))
             cases.append((p.stem, p))
         print(f"\n== constrained-random: {len(cases)} programs, ~{args.length} instructions each")
-        results = run_many(cases, BUILD / "random", args.jobs)
+        results = run_many(cases, BUILD / "random", args.jobs, variants)
         bad = [r for r in results if not r["ok"]]
         tot_i = sum(r["variants"].get("pipe", {}).get("perf", {}).get("instret", 0) for r in results)
         tot_c = sum(r["variants"].get("pipe", {}).get("perf", {}).get("cycles", 0) for r in results)
@@ -335,11 +353,13 @@ def main(argv=None) -> int:
         all_results += results
 
     n_fail = sum(1 for r in all_results if not r["ok"])
-    holes = coverage_report(all_results) if all_results else 0
+    holes = 0
+    if all_results and not args.quiet and {"pipe", "nomm"} <= set(variants):
+        holes = coverage_report(all_results)
     asserts = sum(r["variants"].get("pipe", {}).get("assert_checks", 0) for r in all_results)
     print(f"\nSummary: {len(all_results)-n_fail}/{len(all_results)} programs passed, "
           f"{asserts} assertion evaluations, {holes} coverage holes, {time.time()-t0:.1f}s")
-    if args.mode in ("directed", "all") and args.filter == "":
+    if args.mode in ("directed", "all") and args.filter == "" and not args.quiet:
         status |= 1 if holes else 0
     status |= 1 if n_fail else 0
     print("REGRESSION " + ("PASSED" if status == 0 else "FAILED"))
