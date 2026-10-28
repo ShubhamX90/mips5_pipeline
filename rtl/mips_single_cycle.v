@@ -76,7 +76,7 @@ module mips_single_cycle #(
     wire [31:0] rs_val, rt_val;
     wire        rf_we;
     wire [31:0] rf_wdata;
-    regfile u_rf (
+    regfile #(.BYPASS(0)) u_rf (
         .clk(clk), .we(rf_we), .waddr(dest), .wdata(rf_wdata),
         .raddr1(rs), .rdata1(rs_val), .raddr2(rt), .rdata2(rt_val)
     );

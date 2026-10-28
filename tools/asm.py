@@ -10,13 +10,15 @@ Produces a Harvard image pair:
 Directives : .text .data .word .half .byte .space .ascii .asciiz .align .org .inst
              .equ NAME, expr   .globl (ignored)   .endtest
              .inst WORD[,..]  emit raw instruction word(s) in .text (for illegal-opcode tests)
-Pseudo-ops : nop move li la b beqz bnez blt ble bgt bge not neg check
+Pseudo-ops : nop move li la b beqz bnez blt ble bgt bge not neg check checkr
 Registers  : $0..$31, $zero $at $v0.. $ra, $s8
 Expressions: integers (dec/hex/bin), labels, .equ names, + - * << >> | & ( )
 
 Self-checking test support
     check $reg, expected, id
         expands to:  li $at,expected ; ori $k1,$0,id ; bne $reg,$at,__fail
+    checkr $rA, $rB, id
+        register/register variant:  ori $k1,$0,id ; bne $rA,$rB,__fail
     .endtest
         emits  __pass: ori $k0,$0,0x600D ; break
                __fail: ori $k0,$0,0x0BAD ; break
@@ -386,6 +388,15 @@ class Assembler:
             cur = pc + 4 * (self._li_words(expected) + 1)
             off = ((fail - (cur + 4)) // 4) & 0xFFFF if final else 0
             return E(isa.enc_i(0x05, rA, 1, off))
+
+        if mnem == "checkr":
+            need(3)
+            rA, rB = R(ops[0]), R(ops[1])
+            cid = self.const(ops[2], lineno)
+            E(isa.enc_i(0x0D, 0, 27, cid))
+            fail = self.eval("__fail", not final, lineno)
+            off = ((fail - (pc + 4 + 4)) // 4) & 0xFFFF if final else 0
+            return E(isa.enc_i(0x05, rA, rB, off))
 
         # ----- real instructions
         op = isa.OP_BY_NAME.get(mnem)

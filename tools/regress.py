@@ -79,7 +79,7 @@ def run_sim(variant: str, work: Path, maxcyc: int) -> dict:
            f"+IMEM={work/'prog.imem.hex'}", f"+DMEM={work/'prog.dmem.hex'}",
            f"+TRACE={work/(variant+'.trace')}", f"+STATE={work/(variant+'.state')}",
            f"+MAXCYC={maxcyc}"]
-    p = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    p = subprocess.run(cmd, capture_output=True, text=True, timeout=240)
     txt = p.stdout
     (work / f"{variant}.log").write_text(txt + p.stderr)
     out["returncode"] = p.returncode
