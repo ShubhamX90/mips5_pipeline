@@ -4,7 +4,8 @@
 #   make            build all simulators and run the full regression
 #   make sims       compile the three simulator variants
 #   make lint       strict Verilog-2005 elaboration of the RTL
-#   make test       directed tests only          (tests/asm/*.s)
+#   make tooltest   unit tests of the assembler / ISS / perf model
+#   make test       tool tests + directed tests  (tests/asm/*.s)
 #   make random     constrained-random sweep     (RANDOM_SEEDS=N, default 200)
 #   make bench      benchmark suite + report     (docs/BENCHMARKS.md, bench/results)
 #   make regress    test + random + bench with cross-checks
@@ -27,7 +28,7 @@ TB       := tb/tb_mips.sv tb/mips_assertions.sv tb/mips_coverage.sv
 IVFLAGS  := -g2012 -Wall -Wno-timescale -I rtl -I tb -s tb_mips
 RANDOM_SEEDS ?= 200
 
-.PHONY: all sims lint test random bench regress mutation pipeview wave clean
+.PHONY: all sims lint tooltest test random bench regress mutation pipeview wave clean
 all: regress
 
 build/sim_pipe.vvp: $(RTL) $(TB) tb/dut_probes.svh | build
@@ -49,7 +50,10 @@ lint:
 	$(IVERILOG) -g2005 -Wall -Wno-timescale -I rtl -s mips_single_cycle -o /dev/null $(RTL)
 	@echo "lint: RTL elaborates cleanly as Verilog-2005"
 
-test: sims
+tooltest:
+	$(PYTHON) tests/test_tools.py
+
+test: sims tooltest
 	$(PYTHON) tools/regress.py directed
 
 random: sims
@@ -58,7 +62,7 @@ random: sims
 bench: sims
 	$(PYTHON) tools/bench.py
 
-regress: lint sims
+regress: lint sims tooltest
 	$(PYTHON) tools/regress.py all --seeds $(RANDOM_SEEDS)
 	$(PYTHON) tools/bench.py
 
