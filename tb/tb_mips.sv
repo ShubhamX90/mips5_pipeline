@@ -12,6 +12,7 @@
 //   +STATE=<file>     write the final architectural state here
 //   +MAXCYC=<n>       cycle limit before declaring a timeout (default 300000)
 //   +VCD=<file>       dump a waveform
+//   +PIPETRACE=<file> per-cycle pipeline occupancy (pipelined build; see tools/pipeview.py)
 //
 // Machine-readable result lines on stdout (parsed by tools/regress.py):
 //   RESULT halted cause=<0..3> pc=<hex> addr=<hex>   |   RESULT timeout
@@ -123,6 +124,24 @@ module tb_mips;
         end
     end
 
+`ifndef SINGLE_CYCLE
+    // per-cycle stage occupancy for tools/pipeview.py
+    integer pipe_fd = 0;
+    integer pipe_cyc = 0;
+    reg [1023:0] pipe_name;
+    initial if ($value$plusargs("PIPETRACE=%s", pipe_name)) pipe_fd = $fopen(pipe_name, "w");
+    always @(posedge clk) begin
+        if (!rst && pipe_fd != 0 && !halted) begin
+            pipe_cyc = pipe_cyc + 1;
+            $fdisplay(pipe_fd, "%0d %08x %0d %08x %0d %08x %0d %08x %0d %08x %0d %0d %0d",
+                      pipe_cyc, u_core.imem_addr,
+                      u_core.ifid_valid, u_core.ifid_pc, u_core.idex_valid, u_core.idex_pc,
+                      u_core.exmem_valid, u_core.exmem_pc, u_core.memwb_valid, u_core.memwb_pc,
+                      u_core.stall, u_core.flush_ifid, u_core.flush_idex);
+        end
+    end
+`endif
+
     task dump_state;
         integer fd, k;
         reg [1023:0] fname;
@@ -166,6 +185,9 @@ module tb_mips;
                 dump_state;
                 print_summary;
                 if (trace_fd != 0) $fclose(trace_fd);
+`ifndef SINGLE_CYCLE
+                if (pipe_fd != 0) $fclose(pipe_fd);
+`endif
                 $finish;
             end else if (tb_cycles >= maxcyc) begin
                 $display("RESULT timeout");

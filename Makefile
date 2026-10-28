@@ -9,6 +9,7 @@
 #   make bench      benchmark suite + report     (docs/BENCHMARKS.md, bench/results)
 #   make regress    test + random + bench with cross-checks
 #   make mutation   inject 71 RTL bugs, confirm the regression kills each (docs/MUTATION.md)
+#   make pipeview T=file.s   stage-occupancy diagram of a program on the RTL
 #   make wave T=tests/asm/05_raw_forward_exmem.s   run one program, dump VCD
 #   make clean
 #
@@ -26,7 +27,7 @@ TB       := tb/tb_mips.sv tb/mips_assertions.sv tb/mips_coverage.sv
 IVFLAGS  := -g2012 -Wall -Wno-timescale -I rtl -I tb -s tb_mips
 RANDOM_SEEDS ?= 200
 
-.PHONY: all sims lint test random bench regress mutation wave clean
+.PHONY: all sims lint test random bench regress mutation pipeview wave clean
 all: regress
 
 build/sim_pipe.vvp: $(RTL) $(TB) tb/dut_probes.svh | build
@@ -65,6 +66,9 @@ mutation: sims
 	$(PYTHON) tools/mutation.py --seeds 50
 
 T ?= tests/asm/05_raw_forward_exmem.s
+pipeview: sims
+	$(PYTHON) tools/pipeview.py $(T) --cycles 40
+
 wave: build/sim_pipe.vvp
 	$(PYTHON) tools/asm.py $(T) -o build/wave/prog
 	$(VVP) build/sim_pipe.vvp +IMEM=build/wave/prog.imem.hex +DMEM=build/wave/prog.dmem.hex \
