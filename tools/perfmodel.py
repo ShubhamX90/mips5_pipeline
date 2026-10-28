@@ -116,14 +116,23 @@ def timeline(res, imem_words, cfg: Config = Config()) -> Timeline:
     Total cycles = t[last] + 2 (the last instruction still needs MEM and WB).
     """
     stream = [(r.pc, r.instr, r.taken) for r in res.retired]
+    if res.cause in (isa.EXC_ILLEGAL, isa.EXC_ADDR):
+        idx = res.halt_pc >> 2             # the non-retiring faulting instruction still occupies
+        word = imem_words[idx] if 0 <= idx < len(imem_words) else isa.ILLEGAL_FETCH   # a slot and obeys hazards
+        stream.append((res.halt_pc, word, False))
     t_prev = 2                                # so the first instruction lands in cycle 3
     ready = {}                                # reg -> (producer t, is_load)
     next_min = 0                              # redirect constraint on the next instruction
     base = stalls = flushes = rex = rid = 0
     for pc, instr, taken in stream:
         u = isa.usage(instr)
-        f = isa.fields(instr)
         t = max(t_prev + 1, next_min)
+        if u is None:                          # illegal word: occupies a slot, touches nothing
+            stalls_here = 0
+            next_min = 0
+            t_prev = t
+            continue
+        f = isa.fields(instr)
         floor_t = t
         need = []
         if u.uses_rs:
@@ -170,8 +179,5 @@ def timeline(res, imem_words, cfg: Config = Config()) -> Timeline:
         if u.dest:
             ready[u.dest] = (t, u.is_load)
         t_prev = t
-    n = len(stream)
-    cycles = t_prev + 2 if n else 0
-    if res.cause in (isa.EXC_ILLEGAL, isa.EXC_ADDR):
-        cycles += 1
+    cycles = t_prev + 2 if stream else 0
     return Timeline(cycles, stalls, flushes, rex, rid)

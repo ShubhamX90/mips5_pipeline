@@ -42,18 +42,18 @@ The CPI stack is exact: `cycles = instret + 4 (fill) + load-use stalls + 2·(tak
 |---|---|---:|---|
 | `binary_search` | branch/jr flush | 0.246 | load→compare→three-way branch per probe. |
 | `bubble_sort` | branch/jr flush | 0.349 | data-dependent swap branch and the load→compare→branch chain. |
-| `collatz` | branch/jr flush | 0.576 | random-parity branch plus unconditional back-edge `b`: ~2–3 flush cycles per step. |
+| `collatz` | branch/jr flush | 0.576 | parity branch (taken on even) plus the unconditional back-edge `b`: exactly 4 flush cycles per Collatz step. |
 | `crc32` | branch/jr flush | 0.442 | 1024 data-dependent bit branches, half taken. |
 | `factorial` | branch/jr flush | 0.443 | MUL→MUL forwarding is free; loop back-edges only. |
 | `fib_iter` | branch/jr flush | 0.390 | single dependent ALU chain (fully forwarded) + one taken back-edge per 5 instructions. |
-| `fib_recursive` | branch/jr flush | 0.286 | call/return: `lw $ra; jr $ra` pairs, plus data-dependent recursion and the `jal` redirect. |
+| `fib_recursive` | branch/jr flush | 0.286 | call/return: reloaded arguments/results feed the next instruction (`lw $a0→addiu`, `lw $t1→addu`), plus `jal` (1-cycle) and `jr` + taken-branch (2-cycle) redirects. |
 | `gcd` | branch/jr flush | 0.561 | subtract loop: direction of the compare flips unpredictably; every taken edge is a 2-cycle flush. |
 | `insertion_sort` | branch/jr flush | 0.223 | inner-loop exit branch and the unconditional back-edge. |
-| `linked_list` | branch/jr flush | 0.310 | pointer chasing: every `lw` address depends on the previous `lw` → one load-use bubble per hop. |
+| `linked_list` | branch/jr flush | 0.310 | pointer chasing: two load-use bubbles per hop (`lw` pointer → `lw` value address, then value → `addu`). |
 | `matmul` | branch/jr flush | 0.138 | load-use into MUL inside the k-loop; branch loss small (8-iteration loops). |
 | `memcpy_strlen` | branch/jr flush | 0.332 | `lbu → beq` load-use per byte plus taken back-edges. |
-| `mini_vm` | branch/jr flush | 0.342 | the dispatch chain `lbu→sll→lw→jr` costs a load-use bubble + a 2-cycle `jr` flush per bytecode. |
-| `popcount` | branch/jr flush | 0.436 | 3-instruction dependent loop with a taken back-edge every iteration. |
+| `mini_vm` | branch/jr flush | 0.342 | the dispatch chain `lbu→sll`, `lw→jr` costs two load-use bubbles, a 2-cycle `jr` flush and a 1-cycle `j next` flush per bytecode. |
+| `popcount` | branch/jr flush | 0.436 | 4-instruction dependent loop (`addiu/and/addiu/bne`) with a taken back-edge every iteration. |
 | `saxpy` | branch/jr flush | 0.186 | only load-use into MUL/add; one well-behaved loop branch. |
 | `sieve` | branch/jr flush | 0.486 | short inner loops, byte stores; back-edge flushes dominate. |
 
