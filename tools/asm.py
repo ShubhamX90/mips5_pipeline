@@ -7,8 +7,9 @@ Produces a Harvard image pair:
     <out>.sym.json   label -> address
     <out>.lst        address / word / source listing
 
-Directives : .text .data .word .half .byte .space .ascii .asciiz .align .org
+Directives : .text .data .word .half .byte .space .ascii .asciiz .align .org .inst
              .equ NAME, expr   .globl (ignored)   .endtest
+             .inst WORD[,..]  emit raw instruction word(s) in .text (for illegal-opcode tests)
 Pseudo-ops : nop move li la b beqz bnez blt ble bgt bge not neg check
 Registers  : $0..$31, $zero $at $v0.. $ra, $s8
 Expressions: integers (dec/hex/bin), labels, .equ names, + - * << >> | & ( )
@@ -280,6 +281,11 @@ class Assembler:
                         raise AsmError(f"line {lineno}: {mnem} needs a quoted string")
                     s = bytes(m2.group(1), "utf-8").decode("unicode_escape").encode("latin-1")
                     emit_data(s + (b"\0" if mnem == ".asciiz" else b""), lineno)
+                elif mnem == ".inst":
+                    if section != "text":
+                        raise AsmError(f"line {lineno}: .inst only allowed in .text")
+                    for e in split_operands(rest):
+                        emit_word(self.eval(e, not final, lineno), f".inst {e}", lineno)
                 elif mnem == ".endtest":
                     if section != "text":
                         raise AsmError(f"line {lineno}: .endtest only in .text")
