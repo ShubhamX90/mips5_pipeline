@@ -7,6 +7,7 @@
 #   make tooltest   unit tests of the assembler / ISS / perf model
 #   make test       tool tests + directed tests  (tests/asm/*.s)
 #   make random     constrained-random sweep     (RANDOM_SEEDS=N, default 200)
+#   make exhaustive bounded-exhaustive hazard sequences (14^4 x 2 blocks)
 #   make bench      benchmark suite + report     (docs/BENCHMARKS.md, bench/results)
 #   make regress    test + random + bench with cross-checks
 #   make mutation   inject 71 RTL bugs, confirm the regression kills each (docs/MUTATION.md)
@@ -28,7 +29,7 @@ TB       := tb/tb_mips.sv tb/mips_assertions.sv tb/mips_coverage.sv
 IVFLAGS  := -g2012 -Wall -Wno-timescale -I rtl -I tb -s tb_mips
 RANDOM_SEEDS ?= 200
 
-.PHONY: all sims lint tooltest test random bench regress mutation pipeview wave clean
+.PHONY: all sims lint tooltest test random exhaustive bench regress mutation pipeview wave clean
 all: regress
 
 build/sim_pipe.vvp: $(RTL) $(TB) tb/dut_probes.svh | build
@@ -58,6 +59,9 @@ test: sims tooltest
 
 random: sims
 	$(PYTHON) tools/regress.py random --seeds $(RANDOM_SEEDS)
+
+exhaustive: sims
+	$(PYTHON) tools/exhaustive.py --k 4
 
 bench: sims
 	$(PYTHON) tools/bench.py

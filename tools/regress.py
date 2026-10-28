@@ -166,7 +166,7 @@ def run_case(name: str, src: Path, work_root: Path, variants=("pipe", "nomm", "s
 
     ref_trace = ref.trace
     ref_state = (work / "iss.state").read_text()
-    maxcyc = max(50000, 12 * ref.instret + 1000)
+    maxcyc = 6 * ref.instret + 500          # worst-case CPI is < 3; a hung (mutated) core is cut off quickly
 
     for v in variants:
         r = run_sim(v, work, maxcyc)

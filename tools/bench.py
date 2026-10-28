@@ -249,10 +249,10 @@ def report(entries, d: Delays, path: Path):
     A("| benchmark | dominant loss | loss CPI | comment |")
     A("|---|---|---:|---|")
     notes = {
-        "linked_list": "pointer chasing: every `lw` address depends on the previous `lw` → one load-use bubble per hop.",
-        "fib_recursive": "call/return: `lw $ra; jr $ra` pairs, plus data-dependent recursion and the `jal` redirect.",
-        "mini_vm": "the dispatch chain `lbu→sll→lw→jr` costs a load-use bubble + a 2-cycle `jr` flush per bytecode.",
-        "collatz": "random-parity branch plus unconditional back-edge `b`: ~2–3 flush cycles per step.",
+        "linked_list": "pointer chasing: two load-use bubbles per hop (`lw` pointer → `lw` value address, then value → `addu`).",
+        "fib_recursive": "call/return: reloaded arguments/results feed the next instruction (`lw $a0→addiu`, `lw $t1→addu`), plus `jal` (1-cycle) and `jr` + taken-branch (2-cycle) redirects.",
+        "mini_vm": "the dispatch chain `lbu→sll`, `lw→jr` costs two load-use bubbles, a 2-cycle `jr` flush and a 1-cycle `j next` flush per bytecode.",
+        "collatz": "parity branch (taken on even) plus the unconditional back-edge `b`: exactly 4 flush cycles per Collatz step.",
         "gcd": "subtract loop: direction of the compare flips unpredictably; every taken edge is a 2-cycle flush.",
         "bubble_sort": "data-dependent swap branch and the load→compare→branch chain.",
         "insertion_sort": "inner-loop exit branch and the unconditional back-edge.",
@@ -261,7 +261,7 @@ def report(entries, d: Delays, path: Path):
         "saxpy": "only load-use into MUL/add; one well-behaved loop branch.",
         "memcpy_strlen": "`lbu → beq` load-use per byte plus taken back-edges.",
         "binary_search": "load→compare→three-way branch per probe.",
-        "popcount": "3-instruction dependent loop with a taken back-edge every iteration.",
+        "popcount": "4-instruction dependent loop (`addiu/and/addiu/bne`) with a taken back-edge every iteration.",
         "sieve": "short inner loops, byte stores; back-edge flushes dominate.",
         "fib_iter": "single dependent ALU chain (fully forwarded) + one taken back-edge per 5 instructions.",
         "factorial": "MUL→MUL forwarding is free; loop back-edges only.",
