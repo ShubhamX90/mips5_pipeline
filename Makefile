@@ -8,6 +8,7 @@
 #   make random     constrained-random sweep     (RANDOM_SEEDS=N, default 200)
 #   make bench      benchmark suite + report     (docs/BENCHMARKS.md, bench/results)
 #   make regress    test + random + bench with cross-checks
+#   make mutation   inject 71 RTL bugs, confirm the regression kills each (docs/MUTATION.md)
 #   make wave T=tests/asm/05_raw_forward_exmem.s   run one program, dump VCD
 #   make clean
 #
@@ -25,7 +26,7 @@ TB       := tb/tb_mips.sv tb/mips_assertions.sv tb/mips_coverage.sv
 IVFLAGS  := -g2012 -Wall -Wno-timescale -I rtl -I tb -s tb_mips
 RANDOM_SEEDS ?= 200
 
-.PHONY: all sims lint test random bench regress wave clean
+.PHONY: all sims lint test random bench regress mutation wave clean
 all: regress
 
 build/sim_pipe.vvp: $(RTL) $(TB) tb/dut_probes.svh | build
@@ -59,6 +60,9 @@ bench: sims
 regress: lint sims
 	$(PYTHON) tools/regress.py all --seeds $(RANDOM_SEEDS)
 	$(PYTHON) tools/bench.py
+
+mutation: sims
+	$(PYTHON) tools/mutation.py --seeds 50
 
 T ?= tests/asm/05_raw_forward_exmem.s
 wave: build/sim_pipe.vvp
